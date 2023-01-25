@@ -1,0 +1,1 @@
+print("Twelve points goes to - SWEDEN")
