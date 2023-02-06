@@ -4,23 +4,9 @@ library(tseries)
 library(lmtest)
 library(fUnitRoots)
 
-# Load prices data
-verivox_prices <- read_csv("C:/Users/dja/Downloads/verivox_prices.csv", 
-                           col_types = cols(Wert = col_date(format = "%d.%m.%Y")))
-
-# Plot prices data
-ggplot(verivox_prices, aes(Wert, Zahl)) +
-  geom_line() +
-  ggtitle("Prices")
-
-# Summary statistics of prices data
-summary(verivox_prices$Zahl)
-
-# Unit root test on prices data
-adf.test(verivox_prices$Zahl)
 
 # Load natural gas consumption data
-demand <- read_csv("C:/Users/dja/Downloads/gastag.csv", 
+demand <- read_csv("./data/gastag.csv", 
                    col_types = cols(Gastag = col_date(format = "%d.%m.%Y"), 
                                     ...3 = col_skip(), ...4 = col_skip()))
 
@@ -39,8 +25,28 @@ adf.test(demand$`Restlast[kWh]*`)
 model <- lm(`Restlast[kWh]*` ~ as.numeric(as.Date(Gastag)), data = demand)
 bptest(model)
 
-# Load heating degree days data
-weather <- read_csv("C:/Users/dja/Downloads/IEA_CMCC_HDD18dailyworldbypopalldays.csv", col_names = TRUE, skip = 9, cols("Date" = col_date(format = "%Y-%m-%d")))
+
+# Load prices data
+verivox_prices <- read_csv("./data/verivox_prices.csv", 
+                           col_types = cols(Wert = col_date(format = "%d.%m.%Y")))
+
+# Plot prices data
+ggplot(verivox_prices, aes(Wert, Zahl)) +
+  geom_line() +
+  ggtitle("Prices")
+
+# Summary statistics of prices data
+summary(verivox_prices$Zahl)
+
+# Unit root test on prices data
+adf.test(verivox_prices$Zahl)
+
+# Breusch-Pagan test on price data
+model_price <- lm(Zahl ~ as.numeric(as.Date(Wert)), data = verivox_prices_2018)
+bptest(model_price)
+
+# Load heating degree days / weather  data
+weather <- read_csv("./data/IEA_CMCC_HDD18dailyworldbypopalldays.csv", col_names = TRUE, skip = 9, cols("Date" = col_date(format = "%Y-%m-%d")))
 weather <-  subset(weather, Territory == "Germany" & Date >= as.Date("2018-01-01"))
 
 # Plot heating degree days data
@@ -53,3 +59,8 @@ summary(weather$HDD18)
 
 # Unit root test on heating degree days data
 adf.test(weather$HDD18)
+
+# Breusch-Pagan test on weather data
+model_weather <- lm(HDD18 ~ as.numeric(as.Date(Date)), data = weather)
+bptest(model_weather)
+
