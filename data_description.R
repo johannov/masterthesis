@@ -3,6 +3,7 @@ library(tidyverse)
 library(tseries)
 library(lmtest)
 library(fUnitRoots)
+library(zoo)
 
 
 # Load natural gas consumption data
@@ -64,3 +65,29 @@ adf.test(weather$HDD18)
 model_weather <- lm(HDD18 ~ as.numeric(as.Date(Date)), data = weather)
 bptest(model_weather)
 
+
+# Load income data
+income <- read_csv("./data/income.csv")
+income_wages <- income[c(1,2,7)]
+income_wages <- income_wages %>%
+  mutate(year_quarter = paste0(Year, " Q", quarter))
+income_wages$year_quarter <- as.yearqtr(income_wages$year_quarter, format = "%Y Q%q")
+income_wages$date <- as.Date(income_wages$year_quarter)
+
+
+# Plot wages data
+ggplot(data = income_wages, aes(x = year_quarter, y = `Compensation of employees`)) +
+  geom_line() +
+  xlab("Year Quarter") +
+  ylab("Compensation of employees") +
+  ggtitle("Compensation of employees over time")
+
+# Summary statistics of wages data
+summary(income_wages$`Compensation of employees`)
+
+# Unit root test on heating degree days data
+adf.test(income_wages$`Compensation of employees`)
+
+# Breusch-Pagan test on weather data
+model_wage <- lm(`Compensation of employees` ~ as.numeric(as.Date(date)), data = income_wages)
+bptest(model_wage)
