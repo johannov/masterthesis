@@ -22,14 +22,31 @@ data <- merge(weather, demand, by = 1)
 data <- merge(data, ttfclose, by = 1)
 colnames(data) <- c("date", "hdd", "demand", "ttf")
 
+# Weekly dataset
+library(ISOweek)
+
+# Convert date column to date format
+data$date <- as.Date(data$date)
+
+# Create new columns for iso-week and year
+data <- mutate(data, week = ISOweek(date), year = format(date, format="%Y"))
+
+# Group by iso-year and year, and calculate the sum of hdd, demand, and the mean of ttf
+data_weekly <- group_by(data, week) %>% summarize(hdd = sum(hdd),
+                                                  demand = sum(demand),
+                                                  ttf = mean(ttf))
+
+
 
 # Logarithm
-logdata <- data
+logdata <- data_weekly
 logdata[c("hdd", "demand", "ttf")] <- log(logdata[c("hdd", "demand", "ttf")])
-
+logdata$ttf_lag <- dplyr::lag(logdata$ttf)
+logdata$ttf_diff <- c(NA, diff(logdata$ttf))
+logdata <- drop_na(logdata)
 
 # ARDL model demand
-model <- auto_ardl(demand ~ hdd + ttf, data = logdata, max_order = 8)$best_model
+model <- auto_ardl(demand ~ hdd + ttf, data = logdata, max_order = 8, selection = "BIC")$best_model
 summary(model)
 multipliers(model)
 multipliers(model, type = "sr")
