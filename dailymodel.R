@@ -18,7 +18,7 @@ ttfclose <- read_csv("data/ttfclose.csv",
                      col_types = cols(Timestamp = col_date(format = "%d/%m/%Y")))
 
 # Merging dataset
-data <- merge(weather, demand, all = TRUE, by = 1)
+data <- merge(weather, demand, by = 1)
 data <- merge(data, ttfclose, by = 1)
 colnames(data) <- c("date", "hdd", "demand", "ttf")
 
