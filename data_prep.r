@@ -1,4 +1,3 @@
-setwd("~/masteroppgave")
 
 library(tsDyn)
 library(vars)
@@ -38,9 +37,8 @@ weather_agg <-  weather %>% mutate(month = format(Date, "%m"), year = format(Dat
   summarise(hdd = sum(HDD18), date = first(Date))
 
 #TTF
-ttf <- read_delim("data/ttfclode.csv", 
-                  delim = ";", escape_double = FALSE, col_types = cols(Timestamp = col_date(format = "%d.%m.%Y")), 
-                  trim_ws = TRUE) %>% arrange(Timestamp)
+ttf <- ttfclose <- read_csv("data/ttfclose.csv", 
+                            col_types = cols(Timestamp = col_date(format = "%d.%m.%Y")))
 
 names(ttf) = c("date","close")
 
