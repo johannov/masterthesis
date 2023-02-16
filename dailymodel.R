@@ -2,6 +2,7 @@ library(readr)
 library(tidyverse)
 library(ARDL)
 library(xts)
+library(car)
 
 # Load heating degree days / weather  data
 weather <- read_csv("./data/IEAhdd18_deu.csv", col_names = TRUE, cols("Date" = col_date(format = "%Y-%m-%d")))[c(4,5)]
@@ -29,28 +30,53 @@ library(ISOweek)
 data$date <- as.Date(data$date)
 
 # Create new columns for iso-week and year
-data <- mutate(data, week = ISOweek(date), year = format(date, format="%Y"))
+data <- mutate(data, yearweek = ISOweek(date), year = format(date, format="%Y"))
+data$month <- format(data$date, format = "%Y-%m")
+data$week <- substr(as.character(data$yearweek), 7, 8)
 
 # Group by iso-year and year, and calculate the sum of hdd, demand, and the mean of ttf
-data_weekly <- group_by(data, week) %>% summarize(hdd = sum(hdd),
-                                                  demand = sum(demand),
-                                                  ttf = mean(ttf))
+data_weekly <- group_by(data, yearweek) %>% summarize(hdd = sum(hdd),
+                                                      demand = sum(demand),
+                                                      ttf = mean(ttf))
+
+data_monthly <- group_by(data, yearweek) %>% summarize(hdd = sum(hdd),
+                                                       demand = sum(demand),
+                                                       ttf = mean(ttf))
+# Demeaned
+demdata <- data %>% 
+  group_by(week) %>% 
+  mutate(demand = demand - mean(demand), hdd = hdd - mean(hdd))
+
+demdata$ttf_logret <- log(demdata$ttf) - log(dplyr::lag(demdata$ttf))
+
+demdata <- drop_na(demdata)
 
 
-
-# Logarithm
-logdata <- data_weekly
-logdata[c("hdd", "demand", "ttf")] <- log(logdata[c("hdd", "demand", "ttf")])
-logdata$ttf_lag <- dplyr::lag(logdata$ttf)
-logdata$ttf_diff <- c(NA, diff(logdata$ttf))
-logdata <- drop_na(logdata)
 
 # ARDL model demand
-model <- auto_ardl(demand ~ hdd + ttf, data = logdata, max_order = 8, selection = "BIC")$best_model
+model <- auto_ardl(demand ~ hdd + ttf, data = demdata, max_order = 5, selection = "BIC")$best_model
 summary(model)
 multipliers(model)
 multipliers(model, type = "sr")
 
+# Linear regression
+lm <- lm(demand ~ hdd + dplyr::lag(hdd) + ttf, data = demdata)
+crPlot(lm, variable = "ttf")
+summary(lm)
+
+predicted_values <- predict(lm)
+
+# Calculate the residuals
+residuals <- demdata$demand - c(NA, predicted_values)
+
+plot(demdata$date, residuals)
+
+# Elasticity estimates
+avg_price <- mean(demdata$ttf)
+avg_demand <- mean(demdata$demand) # data or dem dama?
+
+elasticity <- multipliers(model)$estimate[3] * (avg_price / avg_demand)
+elasticity
 
 # 
 # # Price check
