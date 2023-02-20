@@ -6,7 +6,7 @@ plot_demand <- function(model, data) {
   if (length(data$demand) != length(predicted_values)) {
     # If they differ, add NAs to the tail of the predicted values to match the length of the data
     num_nas <- length(data$demand) - length(predicted_values)
-    predicted_values <- c(predicted_values, rep(NA, num_nas))
+    predicted_values <- c(rep(NA, num_nas), predicted_values)
   }
   
   # Calculate the residuals
