@@ -18,10 +18,15 @@ demand <- read_csv("./data/gastag.csv",
 ttfclose <- read_csv("data/ttfclose.csv", 
                      col_types = cols(Timestamp = col_date(format = "%d/%m/%Y")))
 
+# Load EEX prices
+eex <- read_csv("data/eex.csv", 
+                     col_types = cols(Datum = col_date(format = "%d.%m.%Y")))
+
 # Merging dataset
 data <- merge(weather, demand, by = 1)
 data <- merge(data, ttfclose, by = 1)
-colnames(data) <- c("date", "hdd", "demand", "ttf")
+data <- merge(data, eex[c(1, 3)], by = 1)
+colnames(data) <- c("date", "hdd", "demand", "ttf", "eex")
 
 # Weekly dataset
 library(ISOweek)
@@ -42,26 +47,28 @@ data_weekly <- group_by(data, yearweek) %>% summarize(hdd = sum(hdd),
 data_monthly <- group_by(data, yearweek) %>% summarize(hdd = sum(hdd),
                                                        demand = sum(demand),
                                                        ttf = mean(ttf))
-# Demeaned
+# Demeaned, seasonal adjusted
 demdata <- data %>% 
   group_by(week) %>% 
   mutate(demand = demand - mean(demand), hdd = hdd - mean(hdd))
 
 demdata$ttf_logret <- log(demdata$ttf) - log(dplyr::lag(demdata$ttf))
+demdata$eex_lag <- dplyr::lag(demdata$eex)
 
 demdata <- drop_na(demdata)
 
 
 
 # ARDL model demand
-model <- auto_ardl(demand ~ hdd + ttf, data = demdata, max_order = 5, selection = "BIC")$best_model
+model <- auto_ardl(demand ~ hdd + eex_lag, data = demdata, max_order = 5, selection = "BIC")$best_model
 summary(model)
 multipliers(model)
 multipliers(model, type = "sr")
 
-# Linear regression
-lm <- lm(demand ~ hdd + dplyr::lag(hdd) + ttf, data = demdata)
-crPlot(lm, variable = "ttf")
+# Simple linear regression
+lm <- lm(demand ~ hdd + dplyr::lag(hdd) + eex, data = demdata)
+# Checking linear relationship
+crPlot(lm, variable = "eex")
 summary(lm)
 
 predicted_values <- predict(lm)
@@ -72,64 +79,15 @@ residuals <- demdata$demand - c(NA, predicted_values)
 plot(demdata$date, residuals)
 
 # Elasticity estimates
-avg_price <- mean(demdata$ttf)
-avg_demand <- mean(demdata$demand) # data or dem dama?
+avg_price <- mean(demdata$eex_lag)
+avg_demand <- mean(data$demand) # data or dem dama?
 
 elasticity <- multipliers(model)$estimate[3] * (avg_price / avg_demand)
 elasticity
 
-# 
-# # Price check
-# verivox_prices <- read_csv("./data/verivox_prices.csv", 
-#                            col_types = cols(Wert = col_date(format = "%d.%m.%Y")))
-# 
-# verivox_prices$month <- format(verivox_prices$Wert, format="%Y-%m")
-# 
-# data$month <- format(data$date, format="%Y-%m")
-# 
-# ttf_monthly <- aggregate(data$ttf ~ data$month, data=data, mean)
-# colnames(ttf_monthly) <- c("month", "ttf")
-# 
-# pricedf <- merge(verivox_prices, ttf_monthly, by = "month")
-# 
-# n <- 2
-# paste("*** Correlation lag ", n-1 + 0.5, " ***")
-# t <- 0.5 * dplyr::lag(pricedf$ttf, n) + 0.5 * dplyr::lag(pricedf$ttf, n - 1)
-# v <- pricedf$Zahl
-# plot(t, v)
-# cor <- cor.test(t, v, method="pearson")
-# cor$estimate
-# 
-# 
-# 
-# # data <- merge(verivox_prices, data, all.y = TRUE, by = 1)
-# 
-# # Plot MA and verivox
-# ggplot(data, aes(x=Wert)) +
-#   geom_point(aes(y=Zahl*12, color="Zahl"), na.rm=TRUE) +
-#   geom_line(aes(y=ttfmean, color="ttfmean"), na.rm=TRUE) +
-#   labs(x="Date", y="Value", color="Legend") +
-#   scale_color_manual(values=c("blue", "red")) +
-#   theme(legend.position="top")
-# 
-# # Rolling mean
-# data$ttfmean <- zoo::rollmean(data$ttf, k = 50, fill = NA)
-# dataw <- drop_na(data)
-# dataw$dummy <- ifelse(dataw$Wert >= as.Date("2021-11-01"), 1, 0)
-# 
-# dataws <- subset(dataw, dummy == 1)
-# # Model
-# m1 <- lm(Zahl ~ ttfmean, data = dataws)
-# summary(m1)
-# 
-# # Predict values for the existing data
-# 
-# 
-# 
-# # Plot actual and fitted
-# ggplot(dataws, aes(x = Wert)) +
-#   geom_point(aes(y = Zahl, color = "Actual"), na.rm = TRUE) +
-#   geom_line(aes(y = fitted, color = "Fitted"), na.rm = TRUE) +
-#   labs(x = "Date", y = "Zahl", color = "Legend") +
-#   scale_color_manual(values = c("blue", "red")) +
-#   theme(legend.position = "top")
+# Plot fit
+if (!exists("plot_demand")) {
+  source("plotdemand.R")
+}
+
+plot_demand(model, demdata)
