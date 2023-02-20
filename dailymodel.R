@@ -83,6 +83,7 @@ avg_price <- mean(demdata$eex_lag)
 avg_demand <- mean(data$demand) # data or dem dama?
 
 elasticity <- multipliers(model)$estimate[3] * (avg_price / avg_demand)
+"Long run elasticity:" 
 elasticity
 
 # Plot fit
