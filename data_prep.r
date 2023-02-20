@@ -31,6 +31,8 @@ demand_agg = demand %>% mutate(month = format(date, "%m"), year = format(date, "
 weather <- read_csv("./data/IEAhdd18_deu.csv", col_names = TRUE, cols("Date" = col_date(format = "%Y-%m-%d"))) %>% 
   subset(Territory == "Germany" & Date >= as.Date("2018-01-01"))
 
+weather$HDD18 <- weather$HDD18 + 0.00000001
+
 # Aggregate HDD by month
 weather_agg <-  weather %>% mutate(month = format(Date, "%m"), year = format(Date, "%Y")) %>%
   group_by(year, month) %>%
