@@ -1,0 +1,157 @@
+---
+title: "Untitled"
+output: pdf_document
+date: "2023-03-01"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = NA)
+```
+
+```{r cars}
+library(car)
+library(readr)
+library(tidyverse)
+library(ARDL)
+library(xts)
+library(car)
+library(xtable)
+library(ISOweek)
+
+# LOAD DATA #
+
+eex <- read_csv("data/eex.csv", col_types = cols(Datum = col_date(format = "%d.%m.%Y"))) %>%
+  rename(date = Datum, frontjahr = `Frontjahr, Euro/MWh`, price_day_ahead = `Day-Ahead (1 MW), Euro/MWh`) 
+
+demand <- read_csv("data/gastag.csv", col_types = cols(Gastag = col_date(format = "%d.%m.%Y")))%>% 
+  rename(date = Gastag, demand = `Restlast[kWh]*`)
+
+
+weather_cloud <- read_csv("data/cloud.csv", col_names = TRUE, cols("Date" = col_date(format = "%Y-%m-%d")))
+weather <- read_csv("data/hdd16.csv", col_names = TRUE, cols("Date" = col_date(format = "%Y-%m-%d"))) %>% 
+  mutate(HDD16 = HDD16+ 0.00000001)
+
+weather_wind10 <- read_csv("data/wind.csv", col_names = TRUE, cols("Date" = col_date(format = "%Y-%m-%d")))
+
+weighted_weather <- read_csv("data/bl_weighted_weather.csv", 
+                                col_types = cols(date = col_date(format = "%Y-%m-%d")))
+
+
+weighted_weather
+#weighted_weather_pop <- read_csv("data/bl_weighted_weather (1).csv", 
+#                             col_types = cols(date = col_date(format = "%Y-%m-%d")))
+
+google_trends <- read_csv("data/google_trend_indicator.csv", 
+                                                    col_types = cols(...1 = col_skip(), date = col_date(format = "%Y-%m-%d")))
+# --- Joining --- #
+
+#daily_freq <- inner_join(demand, weather, by=c("date"="Date")) %>% 
+daily_freq <- inner_join(demand, weighted_weather, by=c("date")) %>% 
+  inner_join(eex, by=c("date")) %>% 
+  
+  #rename variables 
+  rename(wind=wind_speed_sum) %>% 
+  dplyr::select(date, hdd16, wind, demand, price_day_ahead) %>% 
+  
+  #log transforms
+  mutate(demand = demand /1000,
+         log_demand = log(demand),
+         log_day_ahead = log(price_day_ahead),
+         eex_lag = lag(price_day_ahead))
+
+#Demeaning per week
+demdata <- daily_freq %>% 
+  mutate(week = substr(as.character(ISOweek(date)),7,8)) %>% 
+  group_by(week) %>% 
+  mutate(demand = demand - mean(demand), hdd16 = hdd16 - mean(hdd16)) 
+
+
+
+#More variables
+demdata$eex_prewar= ifelse(demdata$date < as.Date("2022-02-24"), demdata$price_day_ahead, 0)
+demdata$war_d = ifelse(demdata$date >= as.Date("2022-02-24"), 1, 0)
+demdata$eex_postwar = ifelse(demdata$date >= as.Date("2022-02-24"), demdata$price_day_ahead, 0)
+demdata$covid = ifelse(demdata$date >= as.Date("2020-02-24"), demdata$price_day_ahead, 0)
+
+# --- ARDL --- #
+
+model <- auto_ardl(demand ~ hdd16 + wind + price_day_ahead, data = demdata, max_order = 5, selection = "BIC")
+
+summary(model$best_model)
+ml = multipliers(model$best_model)
+ms = multipliers(model$best_model, "sr")
+
+ms
+ml
+
+avg_price <- mean(daily_freq$price_day_ahead)
+avg_demand <- mean(daily_freq$demand)
+avg_hdd <- mean(daily_freq$hdd16)
+avg_wind <- mean(daily_freq$wind)
+
+#price
+ms$Estimate[4]*avg_price/avg_demand
+ml$Estimate[4]*avg_price/avg_demand
+
+#price postwar
+ms$Estimate[5]*avg_price/avg_demand
+ml$Estimate[5]*avg_price/avg_demand
+
+ms
+#hdd
+ms$Estimate[2]*avg_hdd/avg_demand
+ml$Estimate[2]*avg_hdd/avg_demand
+
+#wind  
+ms$Estimate[3]*avg_wind/avg_demand
+ml$Estimate[3]*avg_wind/avg_demand
+
+#Model with two regimes
+
+
+cbind(ms, ml)
+
+```
+
+```{r}
+
+model_t <- auto_ardl(demand ~ hdd16 + wind + eex_prewar + eex_postwar, data = demdata, max_order = 5, selection = "BIC")
+
+summary(model_t$best_model)
+
+ml = multipliers(model_t$best_model)
+ms = multipliers(model_t$best_model, "sr") 
+#price
+ms$Estimate[4]*avg_price/avg_demand
+ml$Estimate[4]*avg_price/avg_demand
+
+#price postwar
+ms$Estimate[5]*avg_price/avg_demand
+ml$Estimate[5]*avg_price/avg_demand
+
+#hdd
+ms$Estimate[2]*avg_hdd/avg_demand
+ml$Estimate[2]*avg_hdd/avg_demand
+
+#wind  
+ms$Estimate[3]*avg_wind/avg_demand
+ml$Estimate[3]*avg_wind/avg_demand
+
+
+plot(demdata$demand, type="l", ylab="Deseasoned consumption", xlab="time")  
+plot(demdata$demand, type="l", ylab="Deseasoned consumption", xlab="time")
+lines(model$best_model$fitted.values, col="red")
+
+try = demdata %>% group_by(format(date, "%m-%Y")) %>% summarise(price = mean(price_day_ahead))
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
