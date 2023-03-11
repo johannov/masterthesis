@@ -14,6 +14,9 @@ library(olsrr)
 
 #--- LOAD DATA ---#
 
+natgas_prices <- read_csv("data/natgas_prices.csv", col_types = cols(date = col_date(format = "%d.%m.%Y"))) %>% 
+  mutate(month = format(date, "%m"), year = format(date, "%Y"))
+
 #EEX proces
 eex <- read_csv("data/eex.csv", col_types = cols(Datum = col_date(format = "%d.%m.%Y"))) %>%
   rename(date = Datum, frontjahr = `Frontjahr, Euro/MWh`, price_day_ahead = `Day-Ahead (1 MW), Euro/MWh`) 
@@ -24,7 +27,7 @@ demand <- read_csv("data/gastag.csv", col_types = cols(Gastag = col_date(format 
 
 #Weather 
 
-weather_cloud <- read_csv("data/cloud.csv", col_names = TRUE, cols("Date" = col_date(format = "%Y-%m-%d")))
+#weather_cloud <- read_csv("data/cloud.csv", col_names = TRUE, cols("Date" = col_date(format = "%Y-%m-%d")))
 
 #FROM IEA
 weather <- read_csv("data/hdd16.csv", col_names = TRUE, cols("Date" = col_date(format = "%Y-%m-%d"))) %>% 
