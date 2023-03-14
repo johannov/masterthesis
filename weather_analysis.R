@@ -25,17 +25,14 @@ total_pop <-  sum(pop_df$SUM_pop_de)
 
 df$weight <- df$SUM_pop_de / total_pop
 
-df_all <- drop_na(df, any_of(c("wind_speed", "cloud_cover_total", "temperature_air_mean_200",
-                         "celc", "hdd16")))
 
-df_hdd <- drop_na(df, any_of(c("hdd16")))
+summarizeWeather <- function(data, var) {
+  
+  data <- drop_na(data, any_of(c(var)))
 
-
-summarizeWeather <- function(data) {
-
-  data <- df_all %>%
-    mutate(across(c("wind_speed", "cloud_cover_total", "temperature_air_mean_200",
-                    "sunshine_duration", "celc", "hdd16"), ~ . * weight))
+  data <- data %>%
+    mutate(across(c("wind_speed", "sunshine_duration", "temperature_air_mean_200",
+                    "cloud_cover_total", "celc", "hdd16"), ~ . * weight))
   
   
   data <- data %>% 
@@ -61,32 +58,42 @@ summarizeWeather <- function(data) {
   
   data$date <- as.Date(data$date)
   
+  data <- data[c("date", "yearweek", "week", "weight", var)]
 
-  data <- merge(data, demand, by = "date")
+ # data <- merge(data, demand, by = "date")
   
   return(data)
 }
 
-data_all <- summarizeWeather(df_all)
-data_hdd <- summarizeWeather(df_hdd)
+data_hdd <- summarizeWeather(df, "hdd16")
+data_wind <- summarizeWeather(df, "wind_speed")
+data_cloud <- summarizeWeather(df, "cloud_cover_total")
+
+weather <- merge(data_hdd, data_wind, by = c("date", "week", "yearweek"))
+weather <- merge(weather, data_cloud, by = c("date", "week", "yearweek"))
+
+weather$month <- as.integer(substr(as.character(weather$date), 6, 7))
+
+weather <- select(weather, -contains("weight"))
+write.csv(weather, "data/weather_geoweighted.csv", row.names = FALSE)
+
+moddf <- merge(moddf, demand, by = "date")
+
 
 data_comp <- merge(data_all, weather_statemean, by = "date")
 
 # Demeaned, seasonal adjusted
-demdata <- data_comp %>% 
+demdata <- moddf %>% 
   group_by(week) %>% 
   mutate(demand = demand - mean(demand),
          wind_speed = wind_speed - mean(wind_speed),
          hdd16 = hdd16 - mean(hdd16),
          cloud_cover_total = cloud_cover_total - mean(cloud_cover_total),
-         hdd16_sum = hdd16_sum - mean(hdd16_sum),
-         wind_speed_sum = wind_speed_sum - mean(wind_speed_sum),
-         cloud_cover_total_sum = cloud_cover_total_sum - mean(cloud_cover_total_sum)
   )
 
 train_demdata <- subset(demdata, date < as.Date("2021-08-01"))
 
-lm_state <- lm(demand ~ hdd16_sum + dplyr::lag(hdd16_sum) + wind_speed_sum + cloud_cover_total_sum, data = train_demdata)
+lm_state <- lm(demand ~ hdd16_sum + dplyr::lag(hdd16_sum) + wind_speed_sum, data = train_demdata)
 summary(lm_state)
 
 lm_pop <- lm(demand ~ hdd16 + dplyr::lag(hdd16) + wind_speed + cloud_cover_total, data = train_demdata)
