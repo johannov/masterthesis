@@ -1,34 +1,66 @@
-year;cpi
-1990;59.9
-1991;61.9
-1992;63.4
-1993;64.8
-1994;65.7
-1995;67.3
-1996;68.2
-1997;69.9
-1998;71.5
-1999;73.2
-2000;75.5
-2001;77.7
-2002;78.7
-2003;80.7
-2004;81
-2005;82.3
-2006;84.2
-2007;84.8
-2008;88
-2009;89.9
-2010;92.1
-2011;93.3
-2012;93.9
-2013;95.9
-2014;97.9
-2015;100
-2016;103.6
-2017;105.5
-2018;108.4
-2019;110.8
-2020;112.2
-2021;116.1
-2022;
+LOCATION,Country,Subject.1,TIME,Value
+DEU,Germany,CPI: All items non-food non-energy,01.10.2017,103.0077
+DEU,Germany,CPI: All items non-food non-energy,01.11.2017,102.3334
+DEU,Germany,CPI: All items non-food non-energy,01.12.2017,102.8958
+DEU,Germany,CPI: All items non-food non-energy,01.01.2018,101.9768
+DEU,Germany,CPI: All items non-food non-energy,01.02.2018,102.4151
+DEU,Germany,CPI: All items non-food non-energy,01.03.2018,103.2239
+DEU,Germany,CPI: All items non-food non-energy,01.04.2018,103.2559
+DEU,Germany,CPI: All items non-food non-energy,01.05.2018,103.9606
+DEU,Germany,CPI: All items non-food non-energy,01.06.2018,104.0385
+DEU,Germany,CPI: All items non-food non-energy,01.07.2018,104.6044
+DEU,Germany,CPI: All items non-food non-energy,01.08.2018,104.6653
+DEU,Germany,CPI: All items non-food non-energy,01.09.2018,104.5468
+DEU,Germany,CPI: All items non-food non-energy,01.10.2018,104.6895
+DEU,Germany,CPI: All items non-food non-energy,01.11.2018,103.5976
+DEU,Germany,CPI: All items non-food non-energy,01.12.2018,104.1211
+DEU,Germany,CPI: All items non-food non-energy,01.01.2019,103.3222
+DEU,Germany,CPI: All items non-food non-energy,01.02.2019,103.7281
+DEU,Germany,CPI: All items non-food non-energy,01.03.2019,104.2089
+DEU,Germany,CPI: All items non-food non-energy,01.04.2019,105.2017
+DEU,Germany,CPI: All items non-food non-energy,01.05.2019,105.1776
+DEU,Germany,CPI: All items non-food non-energy,01.06.2019,105.6976
+DEU,Germany,CPI: All items non-food non-energy,01.07.2019,106.3025
+DEU,Germany,CPI: All items non-food non-energy,01.08.2019,106.1573
+DEU,Germany,CPI: All items non-food non-energy,01.09.2019,106.1705
+DEU,Germany,CPI: All items non-food non-energy,01.10.2019,106.3517
+DEU,Germany,CPI: All items non-food non-energy,01.11.2019,105.2961
+DEU,Germany,CPI: All items non-food non-energy,01.12.2019,105.8785
+DEU,Germany,CPI: All items non-food non-energy,01.01.2020,104.8392
+DEU,Germany,CPI: All items non-food non-energy,01.02.2020,105.1086
+DEU,Germany,CPI: All items non-food non-energy,01.03.2020,105.5965
+DEU,Germany,CPI: All items non-food non-energy,01.04.2020,105.9012
+DEU,Germany,CPI: All items non-food non-energy,01.05.2020,106.0207
+DEU,Germany,CPI: All items non-food non-energy,01.06.2020,106.0267
+DEU,Germany,CPI: All items non-food non-energy,01.07.2020,105.4505
+DEU,Germany,CPI: All items non-food non-energy,01.08.2020,105.5193
+DEU,Germany,CPI: All items non-food non-energy,01.09.2020,105.6086
+DEU,Germany,CPI: All items non-food non-energy,01.10.2020,105.8061
+DEU,Germany,CPI: All items non-food non-energy,01.11.2020,105.5837
+DEU,Germany,CPI: All items non-food non-energy,01.12.2020,105.6611
+DEU,Germany,CPI: All items non-food non-energy,01.01.2021,106.2766
+DEU,Germany,CPI: All items non-food non-energy,01.02.2021,106.7695
+DEU,Germany,CPI: All items non-food non-energy,01.03.2021,107.167
+DEU,Germany,CPI: All items non-food non-energy,01.04.2021,107.3509
+DEU,Germany,CPI: All items non-food non-energy,01.05.2021,107.6513
+DEU,Germany,CPI: All items non-food non-energy,01.06.2021,108.0286
+DEU,Germany,CPI: All items non-food non-energy,01.07.2021,108.4772
+DEU,Germany,CPI: All items non-food non-energy,01.08.2021,108.5436
+DEU,Germany,CPI: All items non-food non-energy,01.09.2021,108.8821
+DEU,Germany,CPI: All items non-food non-energy,01.10.2021,109.1357
+DEU,Germany,CPI: All items non-food non-energy,01.11.2021,109.0545
+DEU,Germany,CPI: All items non-food non-energy,01.12.2021,109.3683
+DEU,Germany,CPI: All items non-food non-energy,01.01.2022,109.1354
+DEU,Germany,CPI: All items non-food non-energy,01.02.2022,109.6488
+DEU,Germany,CPI: All items non-food non-energy,01.03.2022,110.6494
+DEU,Germany,CPI: All items non-food non-energy,01.04.2022,111.2879
+DEU,Germany,CPI: All items non-food non-energy,01.05.2022,111.9431
+DEU,Germany,CPI: All items non-food non-energy,01.06.2022,111.8255
+DEU,Germany,CPI: All items non-food non-energy,01.07.2022,112.4116
+DEU,Germany,CPI: All items non-food non-energy,01.08.2022,112.6783
+DEU,Germany,CPI: All items non-food non-energy,01.09.2022,113.9994
+DEU,Germany,CPI: All items non-food non-energy,01.10.2022,114.4215
+DEU,Germany,CPI: All items non-food non-energy,01.11.2022,114.5428
+DEU,Germany,CPI: All items non-food non-energy,01.12.2022,115.093
+DEU,Germany,CPI: All items non-food non-energy,01.01.2023,115.3309
+DEU,Germany,CPI: All items non-food non-energy,01.02.2023,116.0786

@@ -1,20 +1,29 @@
+source("data_prep.r")
 
 # --- ARDL --- #
 
 #Best yet model:
 
 #full_mod <- auto_ardl(demand ~ hdd16 + price + wind + cloud + hddwar + unemp + prod_idx + government_response + economic_support + covid, data = demdata, max_order = 5, selection = "BIC")
-full_mod <- auto_ardl(demand ~ hdd16 + price + wind + cloud + hddwar + unemp + covid, data = demdata, max_order = 5, selection = "BIC")
-summary(full_mod$best_model)
 
-ml=multipliers(full_mod$best_model)
-ms=multipliers(full_mod$best_model, "sr")
-ms
-ml
+#full_mod_5 <- auto_ardl(demand ~ hdd16 + price + wind + cloud + hddwar + unemp + covid, data = demdata, max_order = c(7,7,7,7,2,1,1,1), selection = "BIC", grid=TRUE)
+#best=c(6,7,0,1,0,1,0,0)
+#Overruler dette med å sette lag av pris = 1.
 
-#Variance inflation factor - measure of collinearity
-vif(full_mod$best_model)
+mod <- ardl(demand ~ hdd16 + price + wind + cloud + hddwar + unemp + covid, data=demdata, order = c(6,7,1,1,0,1,0,0))
+summary(mod)
 
+multipliers(mod)
+multipliers(mod, "sr")
+
+#Fixed order -1 lar det variere, kan sette fast order på feks pris
+mod <- auto_ardl(demand ~ hdd16 + price + cloud + hddwar + unemp | covid + wind, data=demdata, fixed_order=c(-1,-1,1,-1,-1,-1), max_order=7, selection="BIC")
+recm(mod, case="uc")
+
+cor(demdata$price, demdata$wind)
+
+ml=multipliers(mod$best_model)
+ms=multipliers(mod$best_model, "sr")
 
 # Calculating elasticities #
 avg_price <- mean(daily_freq$price)
@@ -33,11 +42,11 @@ ms$Estimate[2]*avg_hdd/avg_demand
 ml$Estimate[2]*avg_hdd/avg_demand
 
 #hdd after war
-(ms$Estimate[2]+ms$Estimate[6])*avg_hdd/avg_demand
+(ms$Estimate[2]+ms$Estimate[7])*avg_hdd/avg_demand
 
 #unemployment
-ms$Estimate[7]*avg_unemp/avg_demand
-ml$Estimate[7]*avg_unemp/avg_demand
+ms$Estimate[6]*avg_unemp/avg_demand
+ml$Estimate[6]*avg_unemp/avg_demand
 
 #wind
 ms$Estimate[4]*avg_wind/avg_demand
@@ -47,6 +56,7 @@ ml$Estimate[4]*avg_wind/avg_demand
 ms$Estimate[5]*avg_cloud/avg_demand
 ml$Estimate[5]*avg_cloud/avg_demand
 
+mod$best_order
 
 # ---- BELOW HERE: MONTH FOR INTEREST --- #
 

@@ -33,12 +33,10 @@ demand <- read_csv("data/residual_load_1103.csv",
 
 #Weather 
 
-dwd_weather <- read_csv("data/dwd_pop_weighted_weather_mean.csv", 
-                       col_types = cols(date = col_date(format = "%Y-%m-%d"))) %>% 
-  rename(hdd16 = hdd16_sum, wind = wind_speed_sum, cloud = cloud_cover_total_sum)
+weather_geoweighted <- read_csv("data/weather_geoweighted.csv", 
+                                col_types = cols(date = col_date(format = "%d.%m.%Y"))) %>% 
+  rename(wind=wind_speed, cloud=cloud_cover_total)
 
-
-head(dwd_weather)
 #Indices
 production <- read_csv("data/prod.csv", col_types = cols(date = col_date(format = "%d.%m.%Y"))) %>% 
   mutate(month = format(date, "%m"), year = format(date, "%Y")) 
@@ -56,6 +54,7 @@ unemployment <- read_csv("data/unemp.csv", col_types = cols(date = col_date(form
 trade <- read_csv("data/trade.csv", col_types = cols(date = col_date(format = "%d.%m.%Y")))%>% 
   mutate(month = format(date, "%m"), year = format(date, "%Y"))
 
+
 #Covid indicators
 covid <- read_csv("data/covid.csv", col_types = cols(date = col_date(format = "%Y-%m-%d"))) %>%
   rename(government_response = "GovernmentResponseIndex_Average", economic_support = "EconomicSupportIndex",
@@ -63,8 +62,17 @@ covid <- read_csv("data/covid.csv", col_types = cols(date = col_date(format = "%
          fiscal_measures = "E3_Fiscal measures")
 
 
+cpi <- read_csv("data/cpi.csv", col_types = cols(TIME = col_date(format = "%d.%m.%Y"))) %>% 
+  rename(date=TIME, cpi = Value)
+
+
+#Fertilizer index
+fertilizer_idx <- read_csv("data/fertilizer_idx.csv", 
+                           col_types = cols(date = col_date(format = "%d.%m.%Y"))) %>% 
+  rename(fertilizer = iFERTILIZERS)
+
 #--- Imputing lower freq data ---#
-dates_earn = 
+
 
 #Spine approach:
 unemp.dates = data.frame(date=seq(from=as.Date("01-01-2018", format="%d-%m-%Y"), to=as.Date("01-02-2023", format="%d-%m-%Y"), by="day"))
@@ -75,11 +83,13 @@ unemp.s = data.frame(ts(left_join(unemp.dates, unemployment, by="date")$nadj_une
 prod.s = data.frame(ts(left_join(prod.dates, production_industry, by="date")$prod_index_adj, start=c(2010,1), frequency=365) %>% na.spline())
 trade.s = data.frame(ts(left_join(prod.dates, trade, by="date")$adj_trade, start=c(2018,1), frequency=365) %>% na.spline())
 earn.s = data.frame(ts(left_join(earn.dates, earnings, by="date")$earnings_adj, start=c(2010,1), frequency = 365)%>% na.spline())
+cpi.s = data.frame(ts(left_join(unemp.dates, cpi, by="date")$cpi, start=c(2018,1), frequency = 365) %>% na.spline())
 
 splined = left_join(data.frame(date = unemp.dates, unemp = unemp.s), data.frame(date = prod.dates, prod = prod.s), by="date") %>% 
   left_join(data.frame(date = prod.dates, trade = trade.s), by="date") %>% 
-  left_join(data.frame(date = earn.dates, earn = earn.s), by="date")
-names(splined) = c("date", "unemp", "prod_idx", "trade", "earnings")
+  left_join(data.frame(date = earn.dates, earn = earn.s), by="date") %>% 
+  left_join(data.frame(date= unemp.dates, cpi = cpi.s), by="date")
+names(splined) = c("date", "unemp", "prod_idx", "trade", "earnings", "cpi")
 
 
 #Linear approach:
@@ -87,17 +97,22 @@ unemp.l = data.frame(ts(left_join(unemp.dates, unemployment, by="date")$nadj_une
 prod.l = data.frame(ts(left_join(prod.dates, production_industry, by="date")$prod_index_adj, start=c(2010,1), frequency=365) %>% na.approx())
 trade.l = data.frame(ts(left_join(prod.dates, trade, by="date")$adj_trade, start=c(2018,1), frequency=365) %>% na.approx())
 earn.l = data.frame(ts(left_join(earn.dates, earnings, by="date")$earnings_adj, start=c(2010,1), frequency = 365)%>% na.approx())
+cpi.l = data.frame(ts(left_join(unemp.dates, cpi, by="date")$cpi, start=c(2018,1), frequency = 365) %>% na.approx())
+fertilizer.l = data.frame(ts(left_join(unemp.dates,fertilizer_idx, by="date")$fertilizer, start=c(2018,1), frequency=365) %>% na.approx())
 
 linear = left_join(data.frame(date = unemp.dates, unemp = unemp.l), data.frame(date = prod.dates, prod = prod.l), by="date") %>% 
   left_join(data.frame(date = prod.dates, trade = trade.l), by="date") %>% 
-  left_join(data.frame(date = earn.dates, earn = earn.l), by="date")
-names(linear) = c("date", "unemp", "prod_idx", "trade", "earnings")
+  left_join(data.frame(date = earn.dates, earn = earn.l), by="date") %>% 
+  left_join(data.frame(date= unemp.dates, cpi = cpi.l), by="date") %>% 
+  left_join(data.frame(date=unemp.dates, fertilizer = fertilizer.l), by="date")
+
+names(linear) = c("date", "unemp", "prod_idx", "trade", "earnings", "cpi", "fertilizer")
 
 
 # --- Joining --- #
 
 #First: Joining demand and weather
-daily_freq <- inner_join(demand, dwd_weather, by="date") %>% 
+daily_freq <- inner_join(demand, weather_geoweighted, by="date") %>% 
   
   #Join with prices
   inner_join(bloomberg_eex, by=c("date")) %>% 
@@ -113,6 +128,9 @@ daily_freq <- inner_join(demand, dwd_weather, by="date") %>%
   
   #Macro imputed indicators
   left_join(linear, by="date") %>% 
+  
+  #Inflation adjustment
+  #mutate(price = price/(cpi/100)) %>% 
   
   #To be able to deseason unemployment without creating NAs, I define the time period here.
   subset(date < as.Date("02-02-2023", format="%d-%m-%Y")) %>% 
